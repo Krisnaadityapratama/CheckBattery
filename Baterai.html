@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Plug IoT</title>
+    <script>
+        let batteryLevel = 0;
+        let minBattery = 20;  // Batas minimum default
+        let maxBattery = 80;  // Batas maksimum default
+
+        navigator.getBattery().then(battery => {
+            function updateBattery() {
+                batteryLevel = battery.level * 100;
+                document.getElementById("battery").innerText = batteryLevel + "%";
+                checkRelayStatus();
+            }
+            battery.addEventListener("levelchange", updateBattery);
+            updateBattery();
+        });
+
+        function setLimits() {
+            minBattery = document.getElementById("minBattery").value;
+            maxBattery = document.getElementById("maxBattery").value;
+            checkRelayStatus();
+        }
+
+        function checkRelayStatus() {
+            if (batteryLevel >= maxBattery) {
+                document.getElementById("status").innerText = "Mati (Baterai penuh)";
+                sendDataToESP("off");
+            } else if (batteryLevel <= minBattery) {
+                document.getElementById("status").innerText = "Nyala (Baterai kurang)";
+                sendDataToESP("on");
+            } else {
+                document.getElementById("status").innerText = "Tetap (Menunggu)";
+            }
+        }
+
+        function sendDataToESP(state) {
+            fetch("http://192.168.1.100/control?relay=" + state)  // Ganti dengan IP ESP32
+                .then(response => console.log("Relay " + state))
+                .catch(error => console.error(error));
+        }
+    </script>
+</head>
+<body>
+    <h2>Smart Plug IoT</h2>
+    <p>Baterai: <span id="battery">0%</span></p>
+    <p>Status Charger: <span id="status">Menunggu...</span></p>
+    <label>Batas Minimum (%) :</label>
+    <input type="number" id="minBattery" value="20">
+    <label>Batas Maksimum (%) :</label>
+    <input type="number" id="maxBattery" value="80">
+    <button onclick="setLimits()">Atur</button>
+</body>
+</html>
